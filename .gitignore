@@ -1,4 +1,7 @@
-.env
-node_modules
-package-lock.json
-dist
+/frontend
+/backend/node_modules
+/backend/package-lock.json
+/backend/dist
+/backend/.env
+
+
