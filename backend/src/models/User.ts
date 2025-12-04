@@ -1,10 +1,13 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Document } from 'mongoose'
 
-interface IUser {
+export interface IUser extends Document {
     handle: string
     name: string
     email: string
     password: string
+    description: string
+    //image: string
+    //links: string
 }
 
 const userSchema = new Schema({
@@ -23,17 +26,29 @@ const userSchema = new Schema({
     email: {
         type: String,
         required: true,
-        unique: true,
         trim: true,
+        unique: true,
         lowercase: true
     },
     password: {
         type: String,
         required: true,
         trim: true
+    },
+     description: {
+        type: String,
+        default: ''
+    },
+    /*image: {
+        type: String,
+        default: ''
+    },
+    links: {
+        type: String,
+        default: '[]'
     }
-
+    */
 })
 
-const User = mongoose.model<IUser>("User", userSchema)
+const User = mongoose.model<IUser>('User', userSchema)
 export default User

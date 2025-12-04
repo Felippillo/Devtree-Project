@@ -1,10 +1,13 @@
 import { Request, Response } from "express"
 import { validationResult } from "express-validator"
 import slug from "slug"
-import jwt from "jsonwebtoken"
+import formidable from "formidable"
+import { v4 as uuid } from "uuid"
 import User from "../models/User"
 import { checkPassword, hashPassword } from "../utils/auth"
 import { generateJWT } from "../utils/jwt"
+import cloudinary from "../config/cloudinary"
+
 
 export const createAccount = async (req: Request, res: Response) => {
 
@@ -62,31 +65,56 @@ export const login = async (req: Request, res: Response) => {
 
 
 export const getUser = async (req: Request, res: Response) => {
-    const bearer = req.headers.authorization
+    res.json(req.user)
 
-    if (!bearer) {
-        const error = new Error('No autorizado')
-        return res.status(401).json({ error: error.message })
-    }
+}
 
-    const [, token] = bearer.split(' ')
-    if (!token) {
-        const error = new Error('No autorizado')
-        return res.status(401).json({ error: error.message })
-    }
-
+export const updateProfile = async (req: Request, res: Response) => {
     try {
-        const result = jwt.verify(token, process.env.JWT_SECRET)
-        if(typeof result === 'object' && result.id) {
-            const user = await User.findById(result.id).select('-password')
-            if (!user) {
-                const error = new Error('Usuario no encontrado')
-                return res.status(404).json({ error: error.message })
-            }
-            res.json(user)
+        const { description } = req.body
+        const handle = slug(req.body.handle, '')
+        const handleExists = await User.findOne({ handle })
+        if (handleExists && handleExists.email !== req.user.email) {
+            const error = new Error('Un usuario con ese nombre de usuario ya existe')
+            return res.status(409).json({ error: error.message })
         }
-    } catch (error) {
-        res.status(500).json({ error: 'Token no valido' })
+
+
+        //Actualizar el perfil
+        req.user.description = description
+        req.user.handle = handle
+        await req.user.save()
+        res.send('Perfil actualizado correctamente')
+
+    } catch (e) {
+        const error = new Error('Error al actualizar el perfil')
+        return res.status(500).json({ error: error.message })
+    }
+}
+
+
+export const uploadImage = async (req: Request, res: Response) => {
+    const form = formidable({ multiples: false })
+    
+     try {
+    
+    form.parse(req,(error, fields, files) => {
+        cloudinary.uploader.upload(files.file[0].filepath, {public_id: uuid()}, async function(error, result) {
+            if (error) {
+                const error = new Error('Error al subir la imagen')
+                return res.status(500).json({ error: error.message })
+            }
+            if (result){
+                console.log(result.secure_url)
+            }
+        })
+
+    })  
+    } catch (e) {
+        const error = new Error('Error al actualizar el perfil')
+        return res.status(500).json({ error: error.message })
     }
 
 }
+
+
