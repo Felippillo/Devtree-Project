@@ -71,7 +71,7 @@ export const getUser = async (req: Request, res: Response) => {
 
 export const updateProfile = async (req: Request, res: Response) => {
     try {
-        const { description } = req.body
+        const { description, links } = req.body
         const handle = slug(req.body.handle, '')
         const handleExists = await User.findOne({ handle })
         if (handleExists && handleExists.email !== req.user.email) {
@@ -83,6 +83,7 @@ export const updateProfile = async (req: Request, res: Response) => {
         //Actualizar el perfil
         req.user.description = description
         req.user.handle = handle
+        req.user.links = links
         await req.user.save()
         res.send('Perfil actualizado correctamente')
 
@@ -105,7 +106,9 @@ export const uploadImage = async (req: Request, res: Response) => {
                 return res.status(500).json({ error: error.message })
             }
             if (result){
-                console.log(result.secure_url)
+                req.user.image = result.secure_url
+                await req.user.save()
+                res.json({image: result.secure_url} )
             }
         })
 
